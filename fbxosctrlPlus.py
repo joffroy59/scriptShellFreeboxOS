@@ -100,7 +100,7 @@ class FreeboxOSCtrl:
 its exposed REST API """
  
     def __init__(self, fbxAddress="http://mafreebox.freebox.fr",
-                 regSaveFile="%s_registration.txt" % appName):
+                 regSaveFile="%s_registration.app_token" % appName):
         """ Constructor """
         self.fbxAddress = fbxAddress
         self.isLoggedIn = False
