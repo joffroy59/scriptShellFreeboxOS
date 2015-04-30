@@ -386,6 +386,40 @@ LCD screen. This command shall be executed only once. """
         self._logout()
         return isOn
 
+    def list_disk(self):
+        """ List disk """
+        log(">>> list_disk")
+        self._login()
+        # GET Launch hdd check
+        headers = {
+            'X-Fbx-App-Auth': self.sessionToken, 'Accept': 'text/plain'}
+        
+        url = self.fbxAddress + "/api/v3/storage/disk/"
+        # GET
+        log("GET url: %s" % url)
+        r = requests.get(url, headers=headers, timeout=1)
+        log("GET response: %s" % r.text)
+        
+        # ensure status_code is 200, else raise exception
+        if requests.codes.ok != r.status_code:
+            raise FbxOSException("Get error: %s" % r.text)
+        # rc is 200 but did we really succeed?
+        resp = json.loads(r.text)
+        log("Obj resp: %s" % resp)
+        
+        #use response 
+        isOn = True
+        if True == resp['success']:
+            for disk in resp['result']:
+                print("* diskId %s " % (disk['id']) )
+                for part in disk['partitions']:
+                    print("  - partId %s (%s)" % (part['id'],part['label']) )
+                    
+        else:
+            raise FbxOSException("Challenge failure: %s" % resp)
+        self._logout()
+        return isOn
+
     def setWifiOn(self):
         """ Activate (turn-on) wifi radio module """
         log(">>> setWifiOn")
@@ -425,6 +459,8 @@ class FreeboxOSCli:
         #    '--wifioff', default=argparse.SUPPRESS, action='store_true', help='turn wifi OFF')
         #self.parser.add_argument(
         #    '--reboot', default=argparse.SUPPRESS, action='store_true', help='reboot the Freebox now!')
+        group.add_argument(
+            '--list_disk', default=argparse.SUPPRESS, action='store_true', help='check hdd now!')
         # Configure cmd=>callback association
         self.cmdCallbacks = {
             'registerapp': self.controller.registerApp,
@@ -432,6 +468,7 @@ class FreeboxOSCli:
             #'wifion': self.controller.setWifiOn,
             #'wifioff': self.controller.setWifiOff,
             #'reboot': self.controller.reboot,
+            'list_disk': self.controller.list_disk,
         }
  
     def cmdExec(self, argv):
