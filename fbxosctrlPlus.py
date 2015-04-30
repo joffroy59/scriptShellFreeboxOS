@@ -2,6 +2,7 @@
 
 #import fbxosctrl_unused
 import fbxosctrl_wifi as wifiMod
+import fbxosctrl_registration as registrationMod
 
 """ This utility handles some FreeboxOS commands which are sent to a
 freebox server to be executed within FreeboxOS app.
@@ -98,39 +99,25 @@ class FreeboxOSCtrl:
     """ This class handles connection and dialog with FreeboxOS thanks to
 its exposed REST API """
  
-    def __init__(self, fbxAddress="http://mafreebox.freebox.fr",
-                 regSaveFile="%s_registration.app_token" % appName):
+    def __init__(self, fbxAddress="http://mafreebox.freebox.fr"
+                 ):
         """ Constructor """
         self.fbxAddress = fbxAddress
         self.isLoggedIn = False
-        self.registrationSaveFile = regSaveFile
-        self.registration = {'app_token': '', 'track_id': None}
         self.challenge = None
         self.sessionToken = None
         self.permissions = None
-        self._loadRegistrationParams()
         self.wifi = wifiMod.FreeboxOSCtrlWifi()
+        self.registrationCtrl = registrationMod.FreeboxOSCtrlRegistration(appName,fbxAddress,log)
 		
     def getWifiStatus(self):
         self.wifi.getWifiStatus(self,log)
 
-    def _saveRegistrationParams(self):
-        """ Save registration parameters (app_id/token) to a local file """
-        log(">>> _saveRegistrationParams")
-        with open(self.registrationSaveFile, 'w') as outfile:
-            json.dump(self.registration, outfile)
- 
-    def _loadRegistrationParams(self):
-        log(">>> _loadRegistrationParams")
-        if os.path.exists(self.registrationSaveFile):
-            with open(self.registrationSaveFile) as infile:
-                self.registration = json.load(infile)
- 
     def _login(self):
         """ Login to FreeboxOS using API credentials """
         log(">>> _login")
         if not self.isLoggedIn:
-            if not self.isRegistered():
+            if not self.registrationCtrl.isRegistered():
                 raise FbxOSException("This app is not registered yet: you have to register it first!")
  
             # 1st stage: get challenge
@@ -153,7 +140,7 @@ its exposed REST API """
  
             # 2nd stage: open a session
             global gAppDesc
-            apptoken = self.registration['app_token']
+            apptoken = self.registrationCtrl.registration['app_token']
             key = self.challenge
             log("challenge: " + key + ", apptoken: " + apptoken)
             # Encode to plain string as some python versions seem disturbed else (cf. issue#2)
@@ -213,85 +200,8 @@ in FreeboxOS server. This script may fail!")
         self.isLoggedIn = False
  
 
-    def hasRegistrationParams(self):
-        """ Indicate whether registration params look initialized """
-        log(">>> hasRegistrationParams")
-        return None != self.registration['track_id'] and '' != self.registration['app_token']
- 
-    def getRegistrationStatus(self):
-        """ Get the current registration status thanks to the track_id """
-        log(">>> getRegistrationStatus")
-        if self.hasRegistrationParams():
-            url = self.fbxAddress + \
-                "/api/v3/login/authorize/%s" % self.registration['track_id']
-            log(url)
-            # GET
-            log("GET url: %s" % url)
-            r = requests.get(url, timeout=3)
-            log("GET response: %s" % r.text)
-            # ensure status_code is 200, else raise exception
-            if requests.codes.ok != r.status_code:
-                raise FbxOSException("Get error: %s" % r.text)
-            resp = json.loads(r.text)
-            return resp['result']['status']
-        else:
-            return "Not registered yet!"
- 
-    def isRegistered(self):
-        """ Check that the app is currently registered (granted) """
-        log(">>> isRegistered")
-        if self.hasRegistrationParams() and 'granted' == self.getRegistrationStatus():
-            return True
-        else:
-            return False
- 
     def registerApp(self):
-        """ Register this app to FreeboxOS to that user grants this apps via Freebox Server
-LCD screen. This command shall be executed only once. """
-        log(">>> registerApp")
-        register = True
-        if self.hasRegistrationParams():
-            status = self.getRegistrationStatus()
-            if 'granted' == status:
-                print("This app is already granted on Freebox Server (app_id = %s). You can now dialog with it." % self.registration['track_id'])
-                register = False
-            elif 'pending' == status:
-                print("This app grant is still pending: user should grant it on Freebox Server lcd/touchpad (app_id = %s)." % self.registration['track_id'])
-                register = False
-            elif 'unknown' == status:
-                print("This app_id (%s) is unknown by Freebox Server: you have to register again to Freebox Server to get a new app_id." % self.registration['track_id'])
-            elif 'denied' == status:
-                print("This app has been denied by user on Freebox Server (app_id = %s)." % self.registration['track_id'])
-                register = False
-            elif 'timeout' == status:
-                print("Timeout occured for this app_id: you have to register again to Freebox Server to get a new app_id (current app_id = %s)." % self.registration['track_id'])
-            else:
-                print("Unexpected response: %s" % status)
- 
-        if register:
-            global gAppDesc
-            url = self.fbxAddress + "/api/v3/login/authorize/"
-            data = json.dumps(gAppDesc)
-            headers = {
-                'Content-type': 'application/json', 'Accept': 'text/plain'}
-            # post it
-            log("POST url: %s data: %s" % (url, data))
-            r = requests.post(url, data=json.dumps(gAppDesc), headers=headers, timeout=3)
-            log("POST response: %s" % r.text)
-            # ensure status_code is 200, else raise exception
-            if requests.codes.ok != r.status_code:
-                raise FbxOSException("Post error: %s" % r.text)
-            # rc is 200 but did we really succeed?
-            log("r.text = %s" % r.text)
-            resp = json.loads(r.text)
-            log("Obj resp: %s" % resp)
-            if True == resp['success']:
-                self.registration['app_token'] = resp['result']['app_token']
-                self.registration['track_id'] = resp['result']['track_id']
-                self._saveRegistrationParams()
-                print("Now you have to accept this app on your Freebox server: take a look on its lcd screen.")
-            else:
-                print("NOK")
+        self.registrationCtrl.registerApp()
  
     def list_disk(self):
         """ List disk """
