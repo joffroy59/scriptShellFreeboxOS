@@ -1,0 +1,14 @@
+python used : 
+    $ python --version
+    Python 3.4.1
+
+bash used : 
+    GIT-BASH
+    $ sh --version
+    GNU bash, version 3.1.20(4)-release (i686-pc-msys)
+    Copyright (C) 2005 Free Software Foundation, Inc.
+
+to add missing import use :
+    pip install requests
+    pip install simplejson
+
