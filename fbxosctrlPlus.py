@@ -1,11 +1,12 @@
 #! /usr/bin/env python
- 
+
+#import fbxosctrl_unused
+
 """ This utility handles some FreeboxOS commands which are sent to a
 freebox server to be executed within FreeboxOS app.
 Supported services:
 - set wifi ON
 - set wifi OFF
-- reboot the Freebox Server
  
 Note: once granted, this app must have 'settings' permissions set
 to True in FreeboxOS webgui to be able to modify the configuration. """
@@ -110,7 +111,7 @@ its exposed REST API """
         self.sessionToken = None
         self.permissions = None
         self._loadRegistrationParams()
-		
+
     def _saveRegistrationParams(self):
         """ Save registration parameters (app_id/token) to a local file """
         log(">>> _saveRegistrationParams")
@@ -333,28 +334,6 @@ LCD screen. This command shall be executed only once. """
             else:
                 print("NOK")
  
-    def reboot(self):
-        """ Reboot the freebox server now! """
-        log(">>> reboot")
-        self._login()
-        headers = {'X-Fbx-App-Auth': self.sessionToken, 'Accept': 'text/plain'}
-        url = self.fbxAddress + "/api/v3/system/reboot/"
-        # POST
-        log("POST url: %s" % url)
-        r = requests.post(url, headers=headers, timeout=3)
-        log("POST response: %s" % r.text)
-        # ensure status_code is 200, else raise exception
-        if requests.codes.ok != r.status_code:
-            raise FbxOSException("Post error: %s" % r.text)
-        # rc is 200 but did we really succeed?
-        resp = json.loads(b'%s' % r.text)
-        #log("Obj resp: %s" % resp)
-        if not resp['success']:
-            raise FbxOSException("Logout failure: %s" % resp)
-        print("Freebox Server is rebooting")
-        self.isLoggedIn = False
-        return True
- 
     def getWifiStatus(self):
         """ Get the current status of wifi: 1 means ON, 0 means OFF """
         log(">>> getWifiStatus")
@@ -457,8 +436,6 @@ class FreeboxOSCli:
         #    '--wifion', default=argparse.SUPPRESS, action='store_true', help='turn wifi ON')
         #group.add_argument(
         #    '--wifioff', default=argparse.SUPPRESS, action='store_true', help='turn wifi OFF')
-        #self.parser.add_argument(
-        #    '--reboot', default=argparse.SUPPRESS, action='store_true', help='reboot the Freebox now!')
         group.add_argument(
             '--list_disk', default=argparse.SUPPRESS, action='store_true', help='check hdd now!')
         # Configure cmd=>callback association
@@ -467,7 +444,6 @@ class FreeboxOSCli:
             'wifistatus': self.controller.getWifiStatus,
             #'wifion': self.controller.setWifiOn,
             #'wifioff': self.controller.setWifiOff,
-            #'reboot': self.controller.reboot,
             'list_disk': self.controller.list_disk,
         }
  
