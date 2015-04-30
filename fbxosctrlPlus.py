@@ -5,8 +5,7 @@
 """ This utility handles some FreeboxOS commands which are sent to a
 freebox server to be executed within FreeboxOS app.
 Supported services:
-- set wifi ON
-- set wifi OFF
+- check wifi status
  
 Note: once granted, this app must have 'settings' permissions set
 to True in FreeboxOS webgui to be able to modify the configuration. """
@@ -67,8 +66,6 @@ __status__ = "Production"
 
 # Return code definitions
 RC_OK = 0
-RC_WIFI_OFF = 0
-RC_WIFI_ON = 1
  
 # Descriptor of this app presented to FreeboxOS server to be granted
 gAppDesc = {
@@ -210,49 +207,6 @@ in FreeboxOS server. This script may fail!")
                 raise FbxOSException("Logout failure: %s" % resp)"""
         self.isLoggedIn = False
  
-    def _setWifiStatus(self, putOn):
-        """ Utility to activate or deactivate wifi radio module """
-        log(">>> _setWifiStatus")
-        self._login()
-        # PUT wifi status
-        headers = {'X-Fbx-App-Auth': self.sessionToken, 'Accept': 'text/plain'}
-        if putOn:
-            data = {'ap_params': {'enabled': True}}
-        else:
-            data = {'ap_params': {'enabled': False}}
-        url = self.fbxAddress + "/api/v2/wifi/config/"
-        log("PUT url: %s data: %s" % (url, json.dumps(data)))
-        # PUT
-        try:
-            r = requests.put(url, data=json.dumps(data), headers=headers, timeout=1)
-            log("PUT response: %s" % r.text)
-        except requests.exceptions.Timeout as timeoutExcept:
-            if not putOn:
-                # If we are connected using wifi, disabling wifi will close connection
-                # thus PUT response will never be received: a timeout is expected
-                print("Wifi is now OFF")
-                return 0
-            else:
-                # Forward timeout exception as should not occur
-                raise timeoutExcept
-        # Response received
-        # ensure status_code is 200, else raise exception
-        if requests.codes.ok != r.status_code:
-            raise FbxOSException("Put error: %s" % r.text)
-        # rc is 200 but did we really succeed?
-        resp = json.loads(b'%s' % r.text)
-        #log("Obj resp: %s" % resp)
-        isOn = False
-        if True == resp['success']:
-            if resp['result']['ap_params']['enabled']:
-                print("Wifi is now ON")
-                isOn = True
-            else:
-                print("Wifi is now OFF")
-        else:
-            raise FbxOSException("Challenge failure: %s" % resp)
-        self._logout()
-        return isOn
 
     def hasRegistrationParams(self):
         """ Indicate whether registration params look initialized """
@@ -399,17 +353,6 @@ LCD screen. This command shall be executed only once. """
         self._logout()
         return isOn
 
-    def setWifiOn(self):
-        """ Activate (turn-on) wifi radio module """
-        log(">>> setWifiOn")
-        return self._setWifiStatus(True)
- 
-    def setWifiOff(self):
-        """ Deactivate (turn-off) wifi radio module """
-        log(">>> setWifiOff")
-        return self._setWifiStatus(False)
- 
- 
 class FreeboxOSCli:
  
     """ Command line (cli) interpreter and dispatch commands to controller """
@@ -432,18 +375,12 @@ class FreeboxOSCli:
             help='register this app to FreeboxOS (to be executed only once)')
         group.add_argument('--wifistatus', default=argparse.SUPPRESS,
                            action='store_true', help='get current wifi status')
-        #group.add_argument(
-        #    '--wifion', default=argparse.SUPPRESS, action='store_true', help='turn wifi ON')
-        #group.add_argument(
-        #    '--wifioff', default=argparse.SUPPRESS, action='store_true', help='turn wifi OFF')
         group.add_argument(
             '--list_disk', default=argparse.SUPPRESS, action='store_true', help='check hdd now!')
         # Configure cmd=>callback association
         self.cmdCallbacks = {
             'registerapp': self.controller.registerApp,
             'wifistatus': self.controller.getWifiStatus,
-            #'wifion': self.controller.setWifiOn,
-            #'wifioff': self.controller.setWifiOff,
             'list_disk': self.controller.list_disk,
         }
  
