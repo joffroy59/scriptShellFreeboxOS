@@ -130,6 +130,9 @@ its exposed REST API """
     def list_disk(self):
         return self.storageCtrl.list_disk()
 
+    def list_partition(self):
+        return self.storageCtrl.list_partition()
+
 class FreeboxOSCli:
  
     """ Command line (cli) interpreter and dispatch commands to controller """
@@ -154,11 +157,14 @@ class FreeboxOSCli:
                            action='store_true', help='get current wifi status')
         group.add_argument(
             '--list_disk', default=argparse.SUPPRESS, action='store_true', help='check list disk')
+        group.add_argument(
+            '--list_partition', default=argparse.SUPPRESS, action='store_true', help='list partition')
         # Configure cmd=>callback association
         self.cmdCallbacks = {
             'registerapp': self.controller.registerApp,
             'wifistatus': self.controller.getWifiStatus,
             'list_disk': self.controller.list_disk,
+            'list_partition': self.controller.list_partition,
         }
  
     def cmdExec(self, argv):
