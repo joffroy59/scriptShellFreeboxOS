@@ -3,6 +3,7 @@
 #import fbxosctrl_unused
 import fbxosctrl_wifi as wifiMod
 import fbxosctrl_registration as registrationMod
+import fbxosctrl_storage as storageCtrlMod
 
 """ This utility handles some FreeboxOS commands which are sent to a
 freebox server to be executed within FreeboxOS app.
@@ -109,6 +110,7 @@ its exposed REST API """
         self.permissions = None
         self.wifi = wifiMod.FreeboxOSCtrlWifi()
         self.registrationCtrl = registrationMod.FreeboxOSCtrlRegistration(appName,fbxAddress,log)
+        self.storageCtrl = storageCtrlMod.FreeboxOSCtrlStorage(self,fbxAddress,log)
 		
     def getWifiStatus(self):
         self.wifi.getWifiStatus(self,log)
@@ -204,38 +206,7 @@ in FreeboxOS server. This script may fail!")
         self.registrationCtrl.registerApp()
  
     def list_disk(self):
-        """ List disk """
-        log(">>> list_disk")
-        self._login()
-        # GET Launch hdd check
-        headers = {
-            'X-Fbx-App-Auth': self.sessionToken, 'Accept': 'text/plain'}
-        
-        url = self.fbxAddress + "/api/v3/storage/disk/"
-        # GET
-        log("GET url: %s" % url)
-        r = requests.get(url, headers=headers, timeout=1)
-        log("GET response: %s" % r.text)
-        
-        # ensure status_code is 200, else raise exception
-        if requests.codes.ok != r.status_code:
-            raise FbxOSException("Get error: %s" % r.text)
-        # rc is 200 but did we really succeed?
-        resp = json.loads(r.text)
-        log("Obj resp: %s" % resp)
-        
-        #use response 
-        isOn = True
-        if True == resp['success']:
-            for disk in resp['result']:
-                print("* diskId %s " % (disk['id']) )
-                for part in disk['partitions']:
-                    print("  - partId %s (%s)" % (part['id'],part['label']) )
-                    
-        else:
-            raise FbxOSException("Challenge failure: %s" % resp)
-        self._logout()
-        return isOn
+        return self.storageCtrl.list_disk()
 
 class FreeboxOSCli:
  
@@ -260,7 +231,7 @@ class FreeboxOSCli:
         group.add_argument('--wifistatus', default=argparse.SUPPRESS,
                            action='store_true', help='get current wifi status')
         group.add_argument(
-            '--list_disk', default=argparse.SUPPRESS, action='store_true', help='check hdd now!')
+            '--list_disk', default=argparse.SUPPRESS, action='store_true', help='check list disk')
         # Configure cmd=>callback association
         self.cmdCallbacks = {
             'registerapp': self.controller.registerApp,
