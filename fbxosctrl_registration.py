@@ -105,3 +105,19 @@ LCD screen. This command shall be executed only once. """
         else:
             return False
  
+    def show_api(self):
+        """ Show API of the Freebox """
+        self.log(">>> show_api")
+        
+        url = self.fbxAddress + "/api_version"
+        self.log(url)
+        # GET
+        self.log("GET url: %s" % url)
+        r = requests.get(url, timeout=3)
+        self.log("GET response: %s" % r.text)
+        # ensure status_code is 200, else raise exception
+        if requests.codes.ok != r.status_code:
+            raise FbxOSException("Get error: %s" % r.text)
+        resp = json.loads(r.text)
+        print(json.dumps(resp, sort_keys=True, indent=4 * ' '))
+
