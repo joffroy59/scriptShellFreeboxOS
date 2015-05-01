@@ -1,16 +1,32 @@
 import requests
 import simplejson as json
 
+class FbxOSException(Exception):
+ 
+    """ Exception for FreeboxOS domain """
+ 
+    def __init__(self, reason):
+        self.reason = reason
+ 
+    def __str__(self):
+        return self.reason
+
 class FreeboxOSCtrlStorage:
     def __init__(self, controler, fbxAddress, log):
         self.controler = controler 
         self.log = log
         self.fbxAddress = fbxAddress
+        self.sessionToken = None
+    
+    def setSessionToken(sessionToken):
+        self.sessionToken = sessionToken
 
     def list_disk(self):
         """ List disk """
         self.log(">>> list_disk")
         self.controler._login()
+        self.log("self.controler.sessionToken=%s" % self.controler.sessionToken)
+        self.log("self.sessionToken=%s" % self.sessionToken)
         # GET Launch hdd check
         headers = {
             'X-Fbx-App-Auth': self.controler.sessionToken, 'Accept': 'text/plain'}

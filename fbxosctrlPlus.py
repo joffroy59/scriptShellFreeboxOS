@@ -3,6 +3,7 @@
 #import fbxosctrl_unused
 import fbxosctrl_wifi as wifiMod
 import fbxosctrl_registration as registrationMod
+import fbxosctrl_login as loginCtrlMod
 import fbxosctrl_storage as storageCtrlMod
 
 """ This utility handles some FreeboxOS commands which are sent to a
@@ -104,102 +105,23 @@ its exposed REST API """
                  ):
         """ Constructor """
         self.fbxAddress = fbxAddress
-        self.isLoggedIn = False
         self.challenge = None
         self.sessionToken = None
         self.permissions = None
         self.wifi = wifiMod.FreeboxOSCtrlWifi()
         self.registrationCtrl = registrationMod.FreeboxOSCtrlRegistration(appName,fbxAddress,log)
         self.storageCtrl = storageCtrlMod.FreeboxOSCtrlStorage(self,fbxAddress,log)
+        self.login = loginCtrlMod.FreeboxOSCtrlLogin(self,fbxAddress,self.registrationCtrl,gAppDesc,log)
 		
     def getWifiStatus(self):
         self.wifi.getWifiStatus(self,log)
 
     def _login(self):
-        """ Login to FreeboxOS using API credentials """
-        log(">>> _login")
-        if not self.isLoggedIn:
-            if not self.registrationCtrl.isRegistered():
-                raise FbxOSException("This app is not registered yet: you have to register it first!")
- 
-            # 1st stage: get challenge
-            url = self.fbxAddress + "/api/v3/login/"
-            # GET
-            log("GET url: %s" % url)
-            r = requests.get(url, timeout=3)
-            log("GET response: %s" % r.text)
-            # ensure status_code is 200, else raise exception
-            if requests.codes.ok != r.status_code:
-                raise FbxOSException("Get error: %s" % r.text)
-            # rc is 200 but did we really succeed?
-            resp = json.loads(r.text)
-            #log("Obj resp: %s" % resp)
-            if resp['success']:
-                if not resp['result']['logged_in']:
-                    self.challenge = resp['result']['challenge']
-            else:
-                raise FbxOSException("Challenge failure: %s" % resp)
- 
-            # 2nd stage: open a session
-            global gAppDesc
-            apptoken = self.registrationCtrl.registration['app_token']
-            key = self.challenge
-            log("challenge: " + key + ", apptoken: " + apptoken)
-            # Encode to plain string as some python versions seem disturbed else (cf. issue#2)
-            #if type(key) == unicode:
-            key = key.encode()
-			# Hashing token with key
-            h = hmac.new(apptoken.encode(), key, sha1)
-            password = h.hexdigest()
-            url = self.fbxAddress + "/api/v3/login/session/"
-            headers = {'Content-type': 'application/json',
-                       'charset': 'utf-8', 'Accept': 'text/plain'}
-            payload = {'app_id': gAppDesc['app_id'], 'password': password}
-            #log("Payload: %s" % payload)
-            data = json.dumps(payload)
-            log("POST url: %s data: %s" % (url, data))
-            # post it
-            r = requests.post(url, data, headers=headers, timeout=3)
-            # ensure status_code is 200, else raise exception
-            log("POST response: %s" % r.text)
-            if requests.codes.ok != r.status_code:
-                raise FbxOSException("Post response error: %s" % r.text)
-            # rc is 200 but did we really succeed?
-            resp = json.loads(r.text)
-            #log("Obj resp: %s" % resp)
-            if resp['success']:
-                self.sessionToken = resp['result']['session_token']
-                self.permissions = resp['result']['permissions']
-                log("Permissions: %s" % self.permissions)
-                if not self.permissions['settings']:
-                    print("Warning: permission 'settings' has not been allowed yet \
-in FreeboxOS server. This script may fail!")
-            else:
-                raise FbxOSException("Session failure: %s" % resp)
-            self.isLoggedIn = True
+        self.login._login()
+        self.sessionToken = self.login.getSessionToken()
  
     def _logout(self):
-        """ logout from FreeboxOS NOT WORKING """
-        # Not documented yet in the API
-        log(">>> _logout DIASABLE BECAUSE NOT WORKING")
-        """if self.isLoggedIn:
-            url = self.fbxAddress + "/api/v3/login/logout/"
-            log("self.sessionToken %s" % self.sessionToken)
-            #headers = {
-            #    'X-Fbx-App-Auth': self.sessionToken, 'Accept': 'text/plain'}
-            # POST
-            log("POST url: %s" % url)
-            r = requests.post(url, timeout=3)
-            log("POST response: %s" % r.text)
-            # ensure status_code is 200, else raise exception
-            if requests.codes.ok != r.status_code:
-                raise FbxOSException("Post error: %s" % r.text)
-            # rc is 200 but did we really succeed?
-            resp = json.loads(r.text)
-            #log("Obj resp: %s" % resp)
-            if not resp['success']:
-                raise FbxOSException("Logout failure: %s" % resp)"""
-        self.isLoggedIn = False
+        self.login._logout()
  
 
     def registerApp(self):
