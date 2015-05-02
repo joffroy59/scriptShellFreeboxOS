@@ -51,7 +51,7 @@ class FreeboxOSCtrlStorage:
                 print("* diskId %s " % (disk['id']) )
                 for part in disk['partitions']:
                     print("  - partId %s (%s)" % (part['id'],part['label']) )
-                    
+                self.log(json.dumps(disk, sort_keys=True, indent=4 * ' '))    
         else:
             raise FbxOSException("Challenge failure: %s" % resp)
         self.controler._logout()
