@@ -151,8 +151,35 @@ class FreeboxOSCtrlStorage:
             raise FbxOSException("Challenge failure: %s" % resp)
         return isStateCheck
         
-        
+    def isCheckAllowed(self,diskId):
+        """ test if check of disk is possible"""
+        self.log(">>> isCheckAllowed %s" % diskId)
 
+        isAllow = False
+        self.controler._login()
+        # GET Launch hdd check
+        headers = {
+            'X-Fbx-App-Auth': self.controler.sessionToken, 'Accept': 'text/plain'}        
+        url = self.fbxAddress + "/api/v3/storage/disk/%s" % diskId
+        # GET
+        self.log("GET url: %s" % url)
+        r = requests.get(url, headers=headers, timeout=1)
+        self.log("GET response: %s" % r.text)
+        
+        # ensure status_code is 200, else raise exception
+        if requests.codes.ok != r.status_code:
+            raise FbxOSException("Get error: %s" % r.text)
+        # rc is 200 but did we really succeed?
+        
+        resp = json.loads(r.text)
+        self.log("Obj resp: %s" % resp)
+        
+        #use response 
+        isOn = True
+        if True == resp['success']:
+            isAllow = resp['result']['idle']
+        return isAllow        
+        
     def check_partition_all(self):
         """ launch check of  disk on all disks"""
         self.log(">>> check_partition_all")
@@ -184,12 +211,18 @@ class FreeboxOSCtrlStorage:
                 launched = False
                 self.log(json.dumps(part, sort_keys=True, indent=4 * ' '))
                 partId=part['id']
-                
-                launched=self._launchDiskCheckOn(partId,headers)
-                if (launched):
-                    launched = self._checkDiskState(partId,headers)
-                    self.log("disk checking %s(check)" % launched)
-                print("Partition Check%s Launch on Disk%s (partition %s)" % ("" if  launched else " not",part['disk_id'],partId))
+                diskId=part['disk_id']
+                statusDisk=""
+                if (self.isCheckAllowed(diskId)):
+                    launched = True
+                    launched=self._launchDiskCheckOn(partId,headers)
+                    if (launched):
+                        launched = self._checkDiskState(partId,headers)
+                        self.log("disk checking %s(check)" % launched)
+                    statusDisk="" if launched else " not"
+                else:
+                    statusDisk=" not Possible"
+                print("Partition Check%s Launch on Disk%s (partition %s)" % (statusDisk,part['disk_id'],partId))
         else:
             raise FbxOSException("Challenge failure: %s" % resp)
         self.controler._logout()
