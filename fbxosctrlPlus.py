@@ -114,7 +114,7 @@ its exposed REST API """
         self.storageCtrl = storageCtrlMod.FreeboxOSCtrlStorage(self,fbxAddress,log)
         self.login = loginCtrlMod.FreeboxOSCtrlLogin(self,fbxAddress,self.registrationCtrl,gAppDesc,log)
         self.airmediaCtrl = airMediaCtrlMod.FreeboxOSCtrlAirmedia(self,fbxAddress,log)
-		
+        
     def getWifiStatus(self):
         self.wifi.getWifiStatus(self,log)
 
@@ -139,10 +139,13 @@ its exposed REST API """
         
     def show_api(self):
         self.registrationCtrl.show_api()
-		
+        
     def list_airmedia(self):
         self.airmediaCtrl.list_airmedia()
-		
+        
+    def server_airmedia_status(self):
+        self.airmediaCtrl.server_status()
+        
 class FreeboxOSCli:
  
     """ Command line (cli) interpreter and dispatch commands to controller """
@@ -175,6 +178,8 @@ class FreeboxOSCli:
             '--show_api', default=argparse.SUPPRESS, action='store_true', help='show api of the Freebox')
         group.add_argument(
             '--list_airmedia', default=argparse.SUPPRESS, action='store_true', help='list all airmedia receiver connected to freebox')
+        group.add_argument(
+            '--server_airmedia_status', default=argparse.SUPPRESS, action='store_true', help='get airmedia server status')
         # Configure cmd=>callback association
         self.cmdCallbacks = {
             'registerapp': self.controller.registerApp,
@@ -184,6 +189,7 @@ class FreeboxOSCli:
             'check_partition_all': self.controller.check_partition_all,
             'show_api': self.controller.show_api,
             'list_airmedia': self.controller.list_airmedia,
+            'server_airmedia_status': self.controller.server_airmedia_status,
         }
  
     def cmdExec(self, argv):
