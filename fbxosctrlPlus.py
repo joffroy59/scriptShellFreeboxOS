@@ -147,10 +147,10 @@ its exposed REST API """
         self.airmediaCtrl.server_status()
 
     def airmedia_play(self):        
-        self.airmediaCtrl.airmedia_play(filename[0])
+        self.airmediaCtrl.airmedia_play(receiver_name,filename[0])
 
     def airmedia_stop(self):
-        self.airmediaCtrl.airmedia_stop()
+        self.airmediaCtrl.airmedia_stop(receiver_name)
 
 class FreeboxOSCli:
  
@@ -167,6 +167,8 @@ class FreeboxOSCli:
             '--version', action='version', version="%(prog)s " + __version__)
         self.parser.add_argument(
             '-v', action='store_true', help='verbose mode')
+        self.parser.add_argument(
+            '--airmedia_receiver_name', default=['Freebox Player'], action='store', nargs=1, help='air media receiver name')
         # Real freeboxOS actions
         group = self.parser.add_mutually_exclusive_group()
         group.add_argument(
@@ -218,6 +220,11 @@ class FreeboxOSCli:
         global filename
         if 'airmedia_play' in argsdict:
             filename = argsdict['airmedia_play']
+        if 'airmedia_receiver_name' in argsdict:
+            global receiver_name
+            receiver_name = argsdict['airmedia_receiver_name'][0]
+            log("receiver_name=%s" % receiver_name)
+            del argsdict['airmedia_receiver_name']
         # Let's execute FreeboxOS cmd
         return self.dispatch(argsdict.keys())
  

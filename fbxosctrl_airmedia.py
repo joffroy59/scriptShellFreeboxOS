@@ -89,7 +89,7 @@ class FreeboxOSCtrlAirmedia:
         self.controler._logout()
         return isOn
 
-    def airmedia_play(self,mediaUrl):
+    def airmedia_play(self, receiver_name, mediaUrl):
         """ airmedia_play """
         self.log(">>> airmedia_play")
         self.controler._login()
@@ -99,7 +99,7 @@ class FreeboxOSCtrlAirmedia:
         headers = {
             'X-Fbx-App-Auth': self.controler.sessionToken, 'Accept': 'text/plain'}
         
-        url = self.fbxAddress + "/api/v3/airmedia/receivers/Freebox%20Player/" #TODO choose client
+        url = self.fbxAddress + "/api/v3/airmedia/receivers/"+ receiver_name + "/" 
         # GET
         self.log("POST url: %s" % url)
         postData = {"action": "start", "media_type": "video","media": mediaUrl}
@@ -124,7 +124,7 @@ class FreeboxOSCtrlAirmedia:
         self.controler._logout()
         return isOn
 
-    def airmedia_stop(self):
+    def airmedia_stop(self, receiver_name):
         """ airmedia_stop """
         self.log(">>> airmedia_stop")
         self.controler._login()
@@ -134,7 +134,7 @@ class FreeboxOSCtrlAirmedia:
         headers = {
             'X-Fbx-App-Auth': self.controler.sessionToken, 'Accept': 'text/plain'}
         
-        url = self.fbxAddress + "/api/v3/airmedia/receivers/Freebox%20Player/" #TODO choose client
+        url = self.fbxAddress + "/api/v3/airmedia/receivers/"+ receiver_name + "/" 
         # GET
         self.log("POST url: %s" % url)
         postData = {"action": "stop", "media_type": "video"}
