@@ -167,8 +167,6 @@ class FreeboxOSCli:
             '--version', action='version', version="%(prog)s " + __version__)
         self.parser.add_argument(
             '-v', action='store_true', help='verbose mode')
-        self.parser.add_argument(
-            '-f', action='store', nargs=1, help='file name')
         # Real freeboxOS actions
         group = self.parser.add_mutually_exclusive_group()
         group.add_argument(
@@ -189,7 +187,7 @@ class FreeboxOSCli:
         group.add_argument(
             '--server_airmedia_status', default=argparse.SUPPRESS, action='store_true', help='get airmedia server status')
         group.add_argument(
-            '--airmedia_play', default=argparse.SUPPRESS, action='store_true', help='play media on airmedia client')
+            '--airmedia_play', default=argparse.SUPPRESS, action='store', nargs=1, help='play media on airmedia client')
         group.add_argument(
             '--airmedia_stop', default=argparse.SUPPRESS, action='store_true', help='stop media on airmedia client')
         # Configure cmd=>callback association
@@ -218,9 +216,8 @@ class FreeboxOSCli:
         # Suppress '-v' command as not a FreeboxOS cmd
         del argsdict['v']
         global filename
-        # Suppress '-f' command as not a FreeboxOS cmd
-        filename = argsdict['f']
-        del argsdict['f']
+        if 'airmedia_play' in argsdict:
+            filename = argsdict['airmedia_play']
         # Let's execute FreeboxOS cmd
         return self.dispatch(argsdict.keys())
  
