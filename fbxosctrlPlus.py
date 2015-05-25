@@ -145,7 +145,13 @@ its exposed REST API """
         
     def server_airmedia_status(self):
         self.airmediaCtrl.server_status()
-        
+
+    def airmedia_play(self):        
+        self.airmediaCtrl.airmedia_play(filename[0])
+
+    def airmedia_stop(self):
+        self.airmediaCtrl.airmedia_stop()
+
 class FreeboxOSCli:
  
     """ Command line (cli) interpreter and dispatch commands to controller """
@@ -161,6 +167,8 @@ class FreeboxOSCli:
             '--version', action='version', version="%(prog)s " + __version__)
         self.parser.add_argument(
             '-v', action='store_true', help='verbose mode')
+        self.parser.add_argument(
+            '-f', action='store', nargs=1, help='file name')
         # Real freeboxOS actions
         group = self.parser.add_mutually_exclusive_group()
         group.add_argument(
@@ -180,6 +188,10 @@ class FreeboxOSCli:
             '--list_airmedia', default=argparse.SUPPRESS, action='store_true', help='list all airmedia receiver connected to freebox')
         group.add_argument(
             '--server_airmedia_status', default=argparse.SUPPRESS, action='store_true', help='get airmedia server status')
+        group.add_argument(
+            '--airmedia_play', default=argparse.SUPPRESS, action='store_true', help='play media on airmedia client')
+        group.add_argument(
+            '--airmedia_stop', default=argparse.SUPPRESS, action='store_true', help='stop media on airmedia client')
         # Configure cmd=>callback association
         self.cmdCallbacks = {
             'registerapp': self.controller.registerApp,
@@ -190,19 +202,25 @@ class FreeboxOSCli:
             'show_api': self.controller.show_api,
             'list_airmedia': self.controller.list_airmedia,
             'server_airmedia_status': self.controller.server_airmedia_status,
+            'airmedia_play': self.controller.airmedia_play,
+            'airmedia_stop':self.controller.airmedia_stop,
         }
  
     def cmdExec(self, argv):
         """ Parse the parameters and execute the associated command """
         args = self.parser.parse_args(argv)
         argsdict = vars(args)
-        log("Args dict: %s" % argsdict)
         # Activate verbose mode if requested
         if True == argsdict['v']:
             global gVerbose
             gVerbose = True
+        log("Args dict: %s" % argsdict)
         # Suppress '-v' command as not a FreeboxOS cmd
         del argsdict['v']
+        global filename
+        # Suppress '-f' command as not a FreeboxOS cmd
+        filename = argsdict['f']
+        del argsdict['f']
         # Let's execute FreeboxOS cmd
         return self.dispatch(argsdict.keys())
  
