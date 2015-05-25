@@ -5,6 +5,7 @@ import fbxosctrl_wifi as wifiMod
 import fbxosctrl_registration as registrationMod
 import fbxosctrl_login as loginCtrlMod
 import fbxosctrl_storage as storageCtrlMod
+import fbxosctrl_airmedia as airMediaCtrlMod
 
 """ This utility handles some FreeboxOS commands which are sent to a
 freebox server to be executed within FreeboxOS app.
@@ -112,6 +113,7 @@ its exposed REST API """
         self.registrationCtrl = registrationMod.FreeboxOSCtrlRegistration(appName,fbxAddress,log)
         self.storageCtrl = storageCtrlMod.FreeboxOSCtrlStorage(self,fbxAddress,log)
         self.login = loginCtrlMod.FreeboxOSCtrlLogin(self,fbxAddress,self.registrationCtrl,gAppDesc,log)
+        self.airmediaCtrl = airMediaCtrlMod.FreeboxOSCtrlAirmedia(self,fbxAddress,log)
 		
     def getWifiStatus(self):
         self.wifi.getWifiStatus(self,log)
@@ -122,7 +124,6 @@ its exposed REST API """
  
     def _logout(self):
         self.login._logout()
- 
 
     def registerApp(self):
         self.registrationCtrl.registerApp()
@@ -138,7 +139,10 @@ its exposed REST API """
         
     def show_api(self):
         self.registrationCtrl.show_api()
-
+		
+    def list_airmedia(self):
+        self.airmediaCtrl.list_airmedia()
+		
 class FreeboxOSCli:
  
     """ Command line (cli) interpreter and dispatch commands to controller """
@@ -169,6 +173,8 @@ class FreeboxOSCli:
             '--check_partition_all', default=argparse.SUPPRESS, action='store_true', help='check partition')
         group.add_argument(
             '--show_api', default=argparse.SUPPRESS, action='store_true', help='show api of the Freebox')
+        group.add_argument(
+            '--list_airmedia', default=argparse.SUPPRESS, action='store_true', help='list all airmedia receiver connected to freebox')
         # Configure cmd=>callback association
         self.cmdCallbacks = {
             'registerapp': self.controller.registerApp,
@@ -177,6 +183,7 @@ class FreeboxOSCli:
             'list_partition': self.controller.list_partition,
             'check_partition_all': self.controller.check_partition_all,
             'show_api': self.controller.show_api,
+            'list_airmedia': self.controller.list_airmedia,
         }
  
     def cmdExec(self, argv):
